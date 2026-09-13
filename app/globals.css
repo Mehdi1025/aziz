@@ -22,5 +22,107 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.25);
+}
+
+@keyframes anomaly-beam-pulse {
+  0%,
+  100% {
+    stroke-opacity: 0.45;
+  }
+  50% {
+    stroke-opacity: 0.85;
+  }
+}
+
+@keyframes anomaly-target-pulse {
+  0%,
+  100% {
+    r: 7;
+    fill-opacity: 0.2;
+  }
+  50% {
+    r: 11;
+    fill-opacity: 0.38;
+  }
+}
+
+@keyframes anomaly-map-pulse {
+  0% {
+    stroke-width: 2;
+    fill-opacity: 0.12;
+  }
+  70% {
+    stroke-width: 6;
+    fill-opacity: 0;
+  }
+  100% {
+    stroke-width: 2;
+    fill-opacity: 0;
+  }
+}
+
+.anomaly-beam-active {
+  animation: anomaly-beam-pulse 1.6s ease-in-out infinite;
+}
+
+.anomaly-target-pulse {
+  animation: anomaly-target-pulse 1.6s ease-in-out infinite;
+}
+
+.leaflet-interactive.anomaly-map-pulse {
+  animation: anomaly-map-pulse 2.2s ease-out infinite;
+}
+
+@keyframes tower-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.06;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes tower-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.tower-grid-bg {
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.tower-scanline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.07) 50%,
+    transparent 100%
+  );
+  animation: tower-scan 6s linear infinite;
+  pointer-events: none;
+}
+
+.tower-ring-glow {
+  animation: tower-glow-pulse 3s ease-in-out infinite;
 }

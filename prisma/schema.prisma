@@ -1,0 +1,132 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model City {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  region        String
+  distributors  Distributor[]
+  createdAt     DateTime       @default(now())
+}
+
+model Distributor {
+  id             String         @id @default(cuid())
+  slug           String         @unique
+  name           String
+  address        String?
+  latitude       Float
+  longitude      Float
+  departmentCode String
+  departmentName String
+  cityId         String
+  city           City           @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  totalBoxes     Int            @default(12)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  reservations   Reservation[]
+  activityLogs   ActivityLog[]
+  keyDeposits    KeyDeposit[]
+
+  @@index([cityId])
+  @@index([departmentCode])
+}
+
+model Reservation {
+  id             String      @id @default(cuid())
+  code           String      @unique
+  distributorId  String
+  distributor    Distributor @relation(fields: [distributorId], references: [id], onDelete: Restrict)
+  boxNumber      Int
+  validFrom      DateTime
+  validTo        DateTime
+  isUsed         Boolean     @default(false)
+  scannedAt      DateTime?
+  keyDepositId   String?
+  keyDeposit     KeyDeposit? @relation(fields: [keyDepositId], references: [id], onDelete: SetNull)
+
+  @@index([distributorId, boxNumber])
+  @@index([keyDepositId])
+}
+
+model ActivityLog {
+  id             String       @id @default(cuid())
+  type           String
+  distributorId  String?
+  distributor    Distributor? @relation(fields: [distributorId], references: [id], onDelete: SetNull)
+  code           String?
+  boxNumber      Int?
+  reservationId  String?
+  details        String?
+  createdAt      DateTime     @default(now())
+}
+
+model SubscriptionPlan {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  description   String?
+  maxKeys       Int
+  priceMonthly  Int
+  isActive      Boolean        @default(true)
+  subscriptions Subscription[]
+}
+
+model Landlord {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  phone         String?
+  company       String?
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+  keyDeposits   KeyDeposit[]
+}
+
+model Subscription {
+  id           String           @id @default(cuid())
+  landlordId   String
+  landlord     Landlord         @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  planId       String
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status       String           @default("active")
+  startedAt    DateTime         @default(now())
+  renewsAt     DateTime
+  canceledAt   DateTime?
+  keyDeposits  KeyDeposit[]
+
+  @@index([landlordId])
+  @@index([status])
+}
+
+model KeyDeposit {
+  id              String        @id @default(cuid())
+  landlordId      String
+  landlord        Landlord      @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  subscriptionId  String
+  subscription    Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  propertyLabel   String
+  propertyAddress String?
+  distributorId   String?
+  distributor     Distributor?  @relation(fields: [distributorId], references: [id], onDelete: SetNull)
+  boxNumber       Int?
+  status          String        @default("pending_deposit")
+  notes           String?
+  depositedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  reservations    Reservation[]
+
+  @@index([landlordId])
+  @@index([subscriptionId])
+  @@index([distributorId, boxNumber])
+}
