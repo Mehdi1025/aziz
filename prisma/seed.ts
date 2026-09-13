@@ -1,11 +1,10 @@
 import "dotenv/config";
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { getLibSqlConfig } from "../lib/libsql-config";
 import { MOCK_CITIES, MOCK_DISTRIBUTORS } from "../lib/mock-network-data";
 
-const adapter = new PrismaLibSql({
-  url: process.env.DATABASE_URL ?? "file:./dev.db",
-});
+const adapter = new PrismaLibSql(getLibSqlConfig());
 
 const prisma = new PrismaClient({ adapter });
 

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { getLibSqlConfig } from "@/lib/libsql-config";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -7,12 +8,10 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 /** Incrémenter après changement de schéma pour invalider le singleton dev. */
-const PRISMA_CLIENT_VERSION = "landlords-v1";
+const PRISMA_CLIENT_VERSION = "turso-v1";
 
 function createPrismaClient() {
-  const adapter = new PrismaLibSql({
-    url: process.env.DATABASE_URL ?? "file:./dev.db",
-  });
+  const adapter = new PrismaLibSql(getLibSqlConfig());
 
   return new PrismaClient({ adapter });
 }
