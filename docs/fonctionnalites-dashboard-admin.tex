@@ -1,0 +1,486 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{titlesec}
+
+\geometry{margin=2.5cm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\definecolor{keynest}{RGB}{24,24,27}
+\definecolor{accent}{RGB}{249,115,22}
+
+\titleformat{\section}{\large\bfseries\color{keynest}}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\title{
+  \vspace{1cm}
+  {\Huge\bfseries KeyNest}\\[0.4cm]
+  {\Large Documentation des fonctionnalités}\\[0.2cm]
+  {\large Dashboard Administrateur}
+  \vspace{0.5cm}
+}
+
+\author{Projet \textit{mon-distributeur}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------------
+\section{Introduction}
+
+KeyNest est une plateforme de gestion de \textbf{distributeurs automatiques de clés} (casiers connectés). Le \textbf{dashboard administrateur} (\texttt{/admin}) centralise la supervision du réseau national, la gestion des réservations, des loueurs (hôtes type Airbnb), et le pilotage opérationnel en temps réel.
+
+\subsection{Stack technique}
+\begin{itemize}[noitemsep]
+  \item \textbf{Frontend :} Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Framer Motion
+  \item \textbf{Backend :} Server Actions, API Routes
+  \item \textbf{Base de données :} Prisma 7 + SQLite / Turso (LibSQL)
+  \item \textbf{Cartographie :} Leaflet / React-Leaflet
+  \item \textbf{Déploiement :} Vercel
+\end{itemize}
+
+\subsection{Réseau couvert (données de démonstration)}
+14 villes, 25 distributeurs, 168 casiers répartis sur l'ensemble du territoire français (Paris, Lyon, Marseille, Nice, Bordeaux, Toulouse, Nantes, Lille, Strasbourg, Rennes, Montpellier, Grenoble, Nancy, Reims).
+
+% ---------------------------------------------------------------------------
+\section{Fonctionnalités transverses}
+
+Ces éléments sont disponibles sur l'ensemble ou une grande partie du dashboard.
+
+\subsection{Navigation}
+\begin{itemize}
+  \item \textbf{Sidebar fixe} (desktop) avec 10 sections principales
+  \item \textbf{Barre de navigation mobile} (accès rapide : vue d'ensemble, carte, réservations, live, tower, journal)
+  \item Indicateur d'\textbf{occupation globale} en bas de sidebar (casiers occupés / total, villes, distributeurs)
+\end{itemize}
+
+\subsection{Sélecteur réseau (\textit{Network Picker})}
+Filtrage contextuel par :
+\begin{itemize}[noitemsep]
+  \item Ville (toutes les villes ou une ville précise)
+  \item Distributeur (tous ou un site spécifique)
+\end{itemize}
+Le filtre s'applique aux KPI, réservations, historique, calendrier, journal et live grid.
+
+\subsection{Bandeau KPI (KPI Strip)}
+Affiché sur les onglets : Vue d'ensemble, Carte, Réservations, Historique, Calendrier.
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Indicateur} & \textbf{Description} \\
+  \midrule
+  Casiers occupés & Nombre de casiers actuellement réservés \\
+  Arrivées & Réservations débutant aujourd'hui \\
+  Départs & Réservations se terminant aujourd'hui \\
+  Pass en attente & Pass valides non encore scannés \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Rafraîchissement automatique}
+\begin{itemize}[noitemsep]
+  \item Polling des données toutes les \textbf{20 secondes}
+  \item Notification toast lors d'un \textbf{scan réussi} (ouverture de casier détectée)
+  \item Indicateur de santé API (\texttt{/api/admin/health}) dans l'en-tête
+\end{itemize}
+
+\subsection{Thème clair / sombre}
+Basculement via le bouton en en-tête. Préférence persistée dans le \texttt{localStorage} du navigateur.
+
+\subsection{En-tête dashboard}
+\begin{itemize}[noitemsep]
+  \item Titre dynamique selon l'onglet actif
+  \item Statut \textit{Live} (connexion au backend)
+  \item Sélecteur ville / distributeur
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Vue d'ensemble}
+
+\textbf{Route :} onglet \og Vue d'ensemble \fg{} | \textbf{Objectif :} pilotage hiérarchique du réseau de casiers.
+
+\subsection{Vue réseau national}
+\begin{itemize}
+  \item \textbf{Hero réseau} : taux d'occupation, barre de progression, 4 indicateurs (villes, distributeurs actifs/hors ligne, sites saturés)
+  \item \textbf{Organisation par région} : accordéons par région administrative
+  \item \textbf{Recherche} par nom de ville ou région
+  \item \textbf{Tri} : occupation décroissante / croissante, ordre alphabétique
+  \item Boutons \og Tout ouvrir \fg{} / \og Tout fermer \fg{}
+  \item Régions à forte occupation ou avec sites offline \textbf{ouvertes par défaut}
+  \item Code couleur : vert ($<$60\,\%), orange (60--85\,\%), rouge ($>$85\,\%)
+  \item \textbf{Fil d'Ariane} : Réseau national $\rightarrow$ Ville $\rightarrow$ Distributeur
+  \item Colonne latérale \textbf{Activité récente} (10 derniers événements)
+\end{itemize}
+
+\subsection{Vue par ville}
+Cartes distributeurs avec : nom, adresse, taux d'occupation, barre de progression, badge saturation, statut hors ligne.
+
+\subsection{Vue par distributeur}
+\begin{itemize}
+  \item En-tête site (adresse, occupation, statut offline)
+  \item \textbf{Grille des casiers} : carte par casier (libre / occupé)
+  \item \textbf{Ouverture à distance} sur casier occupé (bouton radio)
+  \item Affichage code masqué, badge arrivée/départ, initiales du pass
+  \item Activité récente filtrée par distributeur
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Carte du réseau}
+
+\textbf{Objectif :} visualisation géographique et détection d'anomalies.
+
+\subsection{Carte interactive (Leaflet)}
+\begin{itemize}
+  \item Carte de France avec marqueurs personnalisés (icônes clé / pin)
+  \item Vue par \textbf{département} ou vue \textbf{France entière}
+  \item Zoom sur département au clic
+  \item Liste des distributeurs par département avec statistiques d'occupation
+  \item Clic sur un distributeur $\rightarrow$ redirection vers la vue d'ensemble filtrée
+\end{itemize}
+
+\subsection{Radar d'anomalies}
+Système de détection automatique en temps réel :
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Type} & \textbf{Label} & \textbf{Déclencheur} \\
+  \midrule
+  \texttt{BLOCKED\_LOCKER} & Casier bloqué & Réservation expirée non récupérée \\
+  \texttt{SCAN\_REFUSED} & Scan refusé & Tentative scan invalide / hors validité \\
+  \texttt{DISTRIBUTOR\_OFFLINE} & Hors ligne & Distributeur \texttt{isActive = false} \\
+  \texttt{OCCUPANCY\_PEAK} & Saturation & Occupation $\geq$ 85\,\% (warning) ou 100\,\% (critique) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Overlay anomalies}
+\begin{itemize}
+  \item Pilule \og Anomalies \fg{} repliable sur la carte
+  \item Accordion par type d'anomalie
+  \item Filtre par type (bloqué, refusé, offline, saturation)
+  \item \textbf{Faisceau visuel} (beam) vers l'anomalie sélectionnée sur la carte
+  \item Clic sur anomalie $\rightarrow$ focus carte + zoom distributeur
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Casiers Live Grid}
+
+\textbf{Objectif :} monitoring temps réel de tous les casiers du réseau.
+
+\subsection{Fonctionnalités}
+\begin{itemize}
+  \item Grille live de tous les casiers (toutes villes ou filtré)
+  \item Statuts : \textbf{Libre}, \textbf{Occupé}, \textbf{Bloqué}
+  \item Filtres : Tous / Libres / Occupés / Bloqués
+  \item \textbf{Recherche} par code, ville, distributeur, numéro de casier
+  \item Regroupement par distributeur (accordéon)
+  \item Bandeau d'occupation réseau animé
+  \item \textbf{Pulse visuel} sur casiers avec activité récente (scan)
+  \item \textbf{Panneau latéral détail} : infos casier, réservation, ouverture à distance
+  \item Lien depuis le journal d'activité vers le casier concerné
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Réservations}
+
+\textbf{Objectif :} gestion des passes actifs et futurs.
+
+\subsection{Fonctionnalités}
+\begin{itemize}
+  \item Tableau des réservations actives et futures
+  \item \textbf{Recherche} par code ou numéro de casier
+  \item \textbf{Filtres} : toutes, aujourd'hui, cette semaine, utilisées, en attente
+  \item \textbf{Tri} : par date d'arrivée ou de départ
+  \item \textbf{Export CSV} des réservations visibles
+  \item Actions par ligne :
+    \begin{itemize}[noitemsep]
+      \item Copier le lien pass (\texttt{/pass?code=...})
+      \item Supprimer la réservation
+    \end{itemize}
+  \item Badges visuels : arrivée aujourd'hui, départ demain
+  \item Affichage masqué du code (sécurité)
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Historique}
+
+\textbf{Objectif :} consulter les séjours terminés ou expirés.
+
+\begin{itemize}[noitemsep]
+  \item Liste des réservations passées (dates de validité expirées)
+  \item Filtrage par réseau (ville / distributeur)
+  \item Informations : code, casier, dates, statut scanné ou non
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Calendrier}
+
+\textbf{Objectif :} vision mensuelle des réservations.
+
+\begin{itemize}[noitemsep]
+  \item Vue calendrier mensuelle
+  \item Navigation mois précédent / suivant
+  \item Réservations affichées par jour (ville, distributeur, casier)
+  \item Filtrage par réseau sélectionné
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Créer une réservation}
+
+\textbf{Objectif :} création manuelle d'un pass client.
+
+\subsection{Formulaire}
+\begin{itemize}[noitemsep]
+  \item Code de réservation (unique)
+  \item Distributeur (groupé par ville)
+  \item Date/heure d'entrée (\texttt{in}) — format français
+  \item Date/heure de sortie (\texttt{out})
+  \item Numéro de casier
+\end{itemize}
+
+\subsection{Après création}
+\begin{itemize}[noitemsep]
+  \item Génération automatique du \textbf{lien pass} (\texttt{/pass?...})
+  \item Bouton \og Copier le lien \fg{}
+  \item Enregistrement dans le journal (\texttt{MANUAL\_CREATE})
+  \item Toast de confirmation
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Journal d'activité}
+
+\textbf{Objectif :} traçabilité complète des opérations.
+
+\subsection{Types d'événements enregistrés}
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Type} & \textbf{Description} \\
+  \midrule
+  \texttt{SCAN} & Scan QR réussi au distributeur \\
+  \texttt{SCAN\_FAILED} & Scan refusé (code invalide ou hors validité) \\
+  \texttt{REMOTE\_OPEN} & Ouverture à distance depuis le dashboard \\
+  \texttt{CREATE} & Pass créé via API \\
+  \texttt{MANUAL\_CREATE} & Réservation créée manuellement \\
+  \texttt{DELETE} & Suppression de réservation \\
+  \texttt{SUBSCRIPTION\_CREATED} & Nouvel abonnement loueur \\
+  \texttt{SUBSCRIPTION\_UPDATED} & Modification statut abonnement \\
+  \texttt{KEY\_REGISTERED} & Clé de logement enregistrée \\
+  \texttt{KEY\_DEPOSITED} & Clé déposée en casier \\
+  \texttt{KEY\_PASS\_CREATED} & Pass client généré pour un locataire \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Affichage}
+\begin{itemize}[noitemsep]
+  \item 100 derniers événements (polling)
+  \item Filtrage par ville / distributeur (sélecteur réseau)
+  \item Icônes et couleurs par type d'événement
+  \item Mode compact disponible (utilisé dans vue d'ensemble et live grid)
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Loueurs \& Abonnements}
+
+\textbf{Objectif :} gestion des hôtes (loueurs type Airbnb) et de leurs clés.
+
+\subsection{Modèle économique — Formules}
+
+\begin{center}
+\begin{tabular}{lrrr}
+  \toprule
+  \textbf{Formule} & \textbf{Prix/mois} & \textbf{Clés max} & \textbf{Cible} \\
+  \midrule
+  Starter & 29\,\EUR{} & 3 & 1 à 3 logements \\
+  Pro & 79\,\EUR{} & 10 & Loueurs actifs \\
+  Business & 149\,\EUR{} & 25 & Parc immobilier étendu \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{KPI loueurs}
+\begin{itemize}[noitemsep]
+  \item Abonnements actifs (+ essais)
+  \item Revenu mensuel récurrent (MRR) estimé
+  \item Clés utilisées / quota total
+  \item Clés en casier (prêtes pour retrait client)
+\end{itemize}
+
+\subsection{Gestion des loueurs}
+\begin{itemize}
+  \item Création loueur : nom, e-mail, téléphone, société, formule
+  \item Recherche et filtre par statut (actif, essai, impayé, résilié, sans abonnement)
+  \item Fiche loueur extensible avec barre de quota clés
+  \item Changement statut abonnement : Actif / Essai / Impayé / Résilié
+\end{itemize}
+
+\subsection{Gestion des clés (logements)}
+\begin{itemize}
+  \item Ajout clé : nom logement, adresse (sous quota abonnement)
+  \item Statuts clé :
+    \begin{itemize}[noitemsep]
+      \item \textbf{À déposer} — enregistrée, pas encore en casier
+      \item \textbf{En casier} — clé physiquement déposée
+      \item \textbf{Récupérée} — retirée par un client
+      \item \textbf{Inactive} — archivée (abonnement résilié)
+    \end{itemize}
+  \item Dépôt en casier : sélection distributeur + numéro de casier (vérification disponibilité)
+  \item \textbf{Génération pass client} : code + dates $\rightarrow$ lien \texttt{/pass} pour envoi Airbnb
+  \item Copie du lien pass en un clic
+\end{itemize}
+
+\subsection{Règles métier}
+\begin{itemize}[noitemsep]
+  \item Quota de clés selon formule (impossible de dépasser)
+  \item Abonnement impayé/résilié : pas de nouvelles clés ni passes
+  \item Vérification casier libre avant dépôt
+  \item Lien réservation $\leftrightarrow$ clé loueur (\texttt{keyDepositId})
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Control Tower}
+
+\textbf{Objectif :} centre de commandement opérationnel (sans carte ni grille).
+
+\subsection{Health Score}
+Score de santé réseau (0--100) avec label : Réseau sain / Sous surveillance / Dégradé / Critique.
+
+\subsection{Morning Brief}
+Résumé matinal automatique : anomalies, occupation, actions prioritaires.
+
+\subsection{File d'actions (Kanban)}
+Actions générées depuis les anomalies réseau :
+\begin{itemize}[noitemsep]
+  \item Priorités : Critique ($<$1h), Urgent ($<$4h), Attention ($<$24h), Info
+  \item Statuts : À faire / En cours / Terminé
+  \item Assignation opérateur (localStorage)
+  \item Filtre par priorité et par région
+  \item \textbf{Mode crise} : focus sur actions critiques uniquement
+\end{itemize}
+
+\subsection{Santé par région}
+Cartes région avec score, nombre de distributeurs, nombre d'incidents.
+
+\subsection{Performance Strip}
+6 KPI avec sparklines sur 7 jours :
+\begin{itemize}[noitemsep]
+  \item Disponibilité réseau
+  \item MTTR (temps moyen de résolution)
+  \item Réservations actives
+  \item Rotation moyenne
+  \item Occupation réseau
+  \item Scans / 7 jours
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Actions serveur (API \& Server Actions)}
+
+\subsection{Admin (\texttt{actions.ts})}
+\begin{itemize}[noitemsep]
+  \item \texttt{getCities}, \texttt{getDistributors}, \texttt{getReservations}, \texttt{getActivityLogs}
+  \item \texttt{createReservationManual} — création pass
+  \item \texttt{deleteReservation}
+  \item \texttt{remoteOpenBox} — ouverture à distance + log
+\end{itemize}
+
+\subsection{Loueurs (\texttt{landlord-actions.ts})}
+\begin{itemize}[noitemsep]
+  \item \texttt{getSubscriptionPlans}, \texttt{getLandlords}
+  \item \texttt{createLandlordWithSubscription}
+  \item \texttt{updateSubscriptionStatus}
+  \item \texttt{addKeyDeposit}, \texttt{depositKeyInLocker}
+  \item \texttt{createClientPassFromKey}
+\end{itemize}
+
+\subsection{API Routes}
+\begin{itemize}[noitemsep]
+  \item \texttt{POST /api/scan} — scan QR au distributeur (ouverture casier)
+  \item \texttt{POST /api/pass} — création pass via API
+  \item \texttt{POST /api/recuperer} — redirection lien collé (legacy)
+  \item \texttt{GET /api/admin/health} — santé backend
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Pages publiques liées (écosystème voyageur)}
+
+Hors dashboard admin, mais connectées au même système :
+
+\begin{itemize}
+  \item \textbf{\texttt{/pass}} — Affichage QR code + numéro de casier pour le voyageur
+  \item \textbf{\texttt{/recuperer}} — Collage du lien Airbnb (espaces non encodés gérés) $\rightarrow$ redirection vers \texttt{/pass}
+  \item \textbf{\texttt{/api/scan}} — Validation du scan et ouverture du casier
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+\section{Modèle de données (résumé)}
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Entité} & \textbf{Rôle} \\
+  \midrule
+  \texttt{City} & Ville du réseau \\
+  \texttt{Distributor} & Distributeur / site de casiers (GPS, département) \\
+  \texttt{Reservation} & Pass client (code, casier, dates, scanné) \\
+  \texttt{ActivityLog} & Journal d'événements \\
+  \texttt{SubscriptionPlan} & Formule d'abonnement loueur \\
+  \texttt{Landlord} & Loueur / hôte \\
+  \texttt{Subscription} & Abonnement actif d'un loueur \\
+  \texttt{KeyDeposit} & Clé d'un logement en gestion \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ---------------------------------------------------------------------------
+\section{Synthèse des 10 onglets}
+
+\begin{center}
+\small
+\begin{tabular}{p{3.2cm}p{9.5cm}}
+  \toprule
+  \textbf{Onglet} & \textbf{Fonction principale} \\
+  \midrule
+  Vue d'ensemble & Navigation hiérarchique réseau $\rightarrow$ ville $\rightarrow$ casiers \\
+  Carte & Géolocalisation + radar anomalies \\
+  Réservations & CRUD passes actifs/futurs, export CSV \\
+  Historique & Séjours expirés \\
+  Calendrier & Planning mensuel \\
+  Créer & Nouveau pass manuel \\
+  Journal & Audit trail complet \\
+  Casiers Live & Monitoring temps réel \\
+  Loueurs & Abonnements + clés + passes clients \\
+  Control Tower & Pilotage opérationnel + KPI \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\vfill
+\begin{center}
+  \small\textit{Document généré pour le projet KeyNest — Dashboard Admin v1.0}
+\end{center}
+
+\end{document}
