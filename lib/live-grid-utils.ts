@@ -49,7 +49,7 @@ export function getBoxStatus(
       reservation.distributorId === distributorId &&
       reservation.boxNumber === boxNumber &&
       !reservation.isUsed &&
-      new Date(reservation.validTo) < now,
+      new Date(reservation.checkOut) < now,
   );
 
   if (blocked) {

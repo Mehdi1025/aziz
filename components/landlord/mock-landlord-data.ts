@@ -1,3 +1,4 @@
+import type { LandlordGuestReservationRow } from "@/lib/landlord-guest-types";
 import type {
   KeyDepositRow,
   LandlordRow,
@@ -190,3 +191,43 @@ export const MOCK_LANDLORD_DASHBOARD: LandlordDashboardData = {
   plans: MOCK_PLANS,
   distributors: MOCK_HOST_DISTRIBUTORS,
 };
+
+export const MOCK_DISTRIBUTOR_SLUGS: Record<string, string> = Object.fromEntries(
+  MOCK_HOST_DISTRIBUTORS.map((d) => [d.id, d.slug]),
+);
+
+export const MOCK_GUEST_RESERVATIONS: LandlordGuestReservationRow[] = [
+  {
+    id: "res_mock_1",
+    code: "HMNCWQN8DM",
+    guestName: "Emma",
+    guestsCount: 2,
+    checkIn: "2026-09-15T15:00:00.000Z",
+    checkOut: "2026-09-18T11:00:00.000Z",
+    isUsed: false,
+    propertyLabel: "Appartement Marais",
+    createdAt: "2026-09-10T09:30:00.000Z",
+  },
+  {
+    id: "res_mock_2",
+    code: "KXP92LMA4T",
+    guestName: "Lucas",
+    guestsCount: 1,
+    checkIn: "2026-09-20T15:00:00.000Z",
+    checkOut: "2026-09-23T11:00:00.000Z",
+    isUsed: false,
+    propertyLabel: "Loft Canal Saint-Martin",
+    createdAt: "2026-09-12T14:00:00.000Z",
+  },
+  {
+    id: "res_mock_3",
+    code: "BRT77WNQ1Z",
+    guestName: "Sophie",
+    guestsCount: 3,
+    checkIn: "2026-08-20T15:00:00.000Z",
+    checkOut: "2026-08-25T11:00:00.000Z",
+    isUsed: true,
+    propertyLabel: "T2 Montmartre",
+    createdAt: "2026-08-18T10:00:00.000Z",
+  },
+];

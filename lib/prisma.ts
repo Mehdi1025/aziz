@@ -8,7 +8,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 /** Incrémenter après changement de schéma pour invalider le singleton dev. */
-const PRISMA_CLIENT_VERSION = "turso-v1";
+const PRISMA_CLIENT_VERSION = "turso-v2";
 
 function createPrismaClient() {
   const adapter = new PrismaLibSql(getLibSqlConfig());

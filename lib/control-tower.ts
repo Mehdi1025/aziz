@@ -144,7 +144,7 @@ function buildForecastActions(
   tomorrowStart.setHours(0, 0, 0, 0);
 
   const arrivalsTomorrow = reservations.filter((reservation) => {
-    const from = new Date(reservation.validFrom);
+    const from = new Date(reservation.checkIn);
     return from >= tomorrowStart && from <= tomorrow;
   });
 
@@ -347,7 +347,7 @@ function buildPerformanceMetrics(
   let avgHours = 0;
   if (usedReservations.length > 0) {
     const totalMs = usedReservations.reduce((sum, r) => {
-      const from = new Date(r.validFrom).getTime();
+      const from = new Date(r.checkIn).getTime();
       const scanned = new Date(r.scannedAt!).getTime();
       return sum + Math.max(0, scanned - from);
     }, 0);

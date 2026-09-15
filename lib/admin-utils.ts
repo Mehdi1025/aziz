@@ -16,8 +16,8 @@ export type ReservationRow = {
   cityName: string;
   region: string;
   boxNumber: number;
-  validFrom: string;
-  validTo: string;
+  checkIn: string;
+  checkOut: string;
   isUsed: boolean;
   scannedAt: string | null;
 };
@@ -97,8 +97,8 @@ export function getActiveReservation(
     (reservation) =>
       reservation.distributorId === distributorId &&
       reservation.boxNumber === boxNumber &&
-      now >= new Date(reservation.validFrom) &&
-      now <= new Date(reservation.validTo),
+      now >= new Date(reservation.checkIn) &&
+      now <= new Date(reservation.checkOut),
   );
 }
 
@@ -120,7 +120,7 @@ export function getFutureReservations(
   now = new Date(),
 ): ReservationRow[] {
   return reservations.filter(
-    (reservation) => new Date(reservation.validTo) >= now,
+    (reservation) => new Date(reservation.checkOut) >= now,
   );
 }
 
@@ -129,13 +129,13 @@ export function getExpiredReservations(
   now = new Date(),
 ): ReservationRow[] {
   return reservations.filter(
-    (reservation) => new Date(reservation.validTo) < now,
+    (reservation) => new Date(reservation.checkOut) < now,
   );
 }
 
 export function getReservationPassUrl(reservation: ReservationRow): string {
-  const inDate = formatPassDateParam(new Date(reservation.validFrom));
-  const outDate = formatPassDateParam(new Date(reservation.validTo));
+  const inDate = formatPassDateParam(new Date(reservation.checkIn));
+  const outDate = formatPassDateParam(new Date(reservation.checkOut));
   return buildPassUrl({
     code: reservation.code,
     in: inDate,
@@ -179,8 +179,8 @@ export function getReservationBadge(
   reservation: ReservationRow,
   now = new Date(),
 ): ReservationBadge {
-  const validFrom = new Date(reservation.validFrom);
-  const validTo = new Date(reservation.validTo);
+  const validFrom = new Date(reservation.checkIn);
+  const validTo = new Date(reservation.checkOut);
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -238,12 +238,12 @@ export function computeKpis(
   const todayEnd = endOfDay(now);
 
   const arrivalsToday = scoped.filter((reservation) => {
-    const validFrom = new Date(reservation.validFrom);
+    const validFrom = new Date(reservation.checkIn);
     return validFrom >= todayStart && validFrom <= todayEnd;
   }).length;
 
   const departuresToday = scoped.filter((reservation) => {
-    const validTo = new Date(reservation.validTo);
+    const validTo = new Date(reservation.checkOut);
     return validTo >= todayStart && validTo <= todayEnd;
   }).length;
 
@@ -330,8 +330,8 @@ export function filterReservations(
       const todayStart = startOfDay(now);
       const todayEnd = endOfDay(now);
       filtered = filtered.filter((reservation) => {
-        const from = new Date(reservation.validFrom);
-        const to = new Date(reservation.validTo);
+        const from = new Date(reservation.checkIn);
+        const to = new Date(reservation.checkOut);
         return (
           (from >= todayStart && from <= todayEnd) ||
           (to >= todayStart && to <= todayEnd) ||
@@ -344,7 +344,7 @@ export function filterReservations(
       const weekEnd = new Date(now);
       weekEnd.setDate(weekEnd.getDate() + 7);
       filtered = filtered.filter(
-        (reservation) => new Date(reservation.validFrom) <= weekEnd,
+        (reservation) => new Date(reservation.checkIn) <= weekEnd,
       );
       break;
     }
@@ -378,9 +378,9 @@ export function sortReservations(
 ): ReservationRow[] {
   return [...reservations].sort((a, b) => {
     if (sort === "departure") {
-      return new Date(a.validTo).getTime() - new Date(b.validTo).getTime();
+      return new Date(a.checkOut).getTime() - new Date(b.checkOut).getTime();
     }
-    return new Date(a.validFrom).getTime() - new Date(b.validFrom).getTime();
+    return new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime();
   });
 }
 
@@ -403,8 +403,8 @@ export function exportReservationsCsv(reservations: ReservationRow[]): string {
     reservation.distributorName,
     reservation.code,
     String(reservation.boxNumber),
-    formatDateTime(reservation.validFrom),
-    formatDateTime(reservation.validTo),
+    formatDateTime(reservation.checkIn),
+    formatDateTime(reservation.checkOut),
     reservation.isUsed ? "Oui" : "Non",
     reservation.scannedAt ? formatDateTime(reservation.scannedAt) : "",
   ]);
@@ -437,8 +437,8 @@ export function buildCalendarDays(
     date.setDate(gridStart.getDate() + index);
 
     const dayReservations = reservations.filter((reservation) => {
-      const from = startOfDay(new Date(reservation.validFrom));
-      const to = endOfDay(new Date(reservation.validTo));
+      const from = startOfDay(new Date(reservation.checkIn));
+      const to = endOfDay(new Date(reservation.checkOut));
       const current = startOfDay(date);
       return current >= from && current <= to;
     });

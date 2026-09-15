@@ -4,7 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AddKeyModal } from "@/components/landlord/add-key-modal";
+import { AirbnbMessageGenerator } from "@/components/landlord/airbnb-message-generator";
 import { DepositKeySheet } from "@/components/landlord/deposit-key-sheet";
+import { GuestReservationsTable } from "@/components/landlord/guest-reservations-table";
 import type { HostKpis } from "@/components/landlord/kpi-cards";
 import { KeyGrid } from "@/components/landlord/key-grid";
 import { LandlordHero } from "@/components/landlord/landlord-hero";
@@ -13,6 +15,8 @@ import { LandlordSidebar } from "@/components/landlord/landlord-sidebar";
 import type { LandlordTab } from "@/components/landlord/landlord-tabs";
 import { LandlordTopbar } from "@/components/landlord/landlord-topbar";
 import type { LandlordDashboardData } from "@/components/landlord/mock-landlord-data";
+import { MOCK_DISTRIBUTOR_SLUGS } from "@/components/landlord/mock-landlord-data";
+import type { LandlordGuestReservationRow } from "@/lib/landlord-guest-types";
 import { OverviewShortcuts } from "@/components/landlord/overview-shortcuts";
 import {
   formatPassDateParam,
@@ -31,6 +35,7 @@ import type { KeyDepositRow } from "@/lib/subscription-types";
 
 type LandlordDashboardProps = {
   initialData: LandlordDashboardData;
+  initialGuestReservations: LandlordGuestReservationRow[];
   useMockActions?: boolean;
 };
 
@@ -51,6 +56,7 @@ const tabMotion = {
 
 export function LandlordDashboard({
   initialData,
+  initialGuestReservations,
   useMockActions = true,
 }: LandlordDashboardProps) {
   const [isLight, setIsLight] = useState(true);
@@ -59,6 +65,15 @@ export function LandlordDashboard({
   const [keys, setKeys] = useState<KeyDepositRow[]>(initialData.landlord.keys);
   const [showAddKey, setShowAddKey] = useState(false);
   const [depositKeyId, setDepositKeyId] = useState<string | null>(null);
+  const [guestReservations] = useState(initialGuestReservations);
+
+  const distributorSlugs = useMemo(
+    () =>
+      Object.fromEntries(
+        initialData.distributors.map((d) => [d.id, d.slug]),
+      ) as Record<string, string>,
+    [initialData.distributors],
+  );
 
   const subscription = landlord.subscription;
   const maxKeys = subscription?.maxKeys ?? 0;
@@ -256,12 +271,30 @@ export function LandlordDashboard({
                 )}
 
                 {activeTab === "passes" && (
-                  <motion.div key="passes" {...tabMotion}>
+                  <motion.div key="passes" {...tabMotion} className="space-y-0">
+                    <AirbnbMessageGenerator
+                      keys={keys}
+                      distributorSlugs={
+                        Object.keys(distributorSlugs).length > 0
+                          ? distributorSlugs
+                          : MOCK_DISTRIBUTOR_SLUGS
+                      }
+                      isLight={isLight}
+                    />
                     <PassGenerator
                       keys={keys}
                       distributors={initialData.distributors}
                       isLight={isLight}
                       onGenerate={useMockActions ? undefined : handleGeneratePass}
+                    />
+                  </motion.div>
+                )}
+
+                {activeTab === "guests" && (
+                  <motion.div key="guests" {...tabMotion}>
+                    <GuestReservationsTable
+                      reservations={guestReservations}
+                      isLight={isLight}
                     />
                   </motion.div>
                 )}

@@ -1,7 +1,6 @@
 import QRCode from "qrcode";
-import { resolveDistributorSlugWithLegacy } from "@/lib/network";
-import { parseFrenchDateParam } from "@/lib/parse-french-date";
-import { prisma } from "@/lib/prisma";
+import { registerGuestFromLink } from "@/app/actions/guest-actions";
+import { PassCaptureClient, type PassCaptureParams } from "@/app/pass/pass-capture-client";
 
 type SearchParams = {
   code?: string | string[];
@@ -9,6 +8,9 @@ type SearchParams = {
   out?: string | string[];
   box?: string | string[];
   site?: string | string[];
+  name?: string | string[];
+  guests?: string | string[];
+  keyId?: string | string[];
 };
 
 type PageProps = {
@@ -18,87 +20,6 @@ type PageProps = {
 function getParam(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
   return value;
-}
-
-async function parseSearchParams(params: SearchParams):
-  Promise<
-    | {
-        ok: true;
-        code: string;
-        boxNumber: number;
-        distributorId: string;
-        distributorName: string;
-        cityName: string;
-        validFrom: Date;
-        validTo: Date;
-      }
-    | { ok: false; error: string }
-  > {
-  const code = getParam(params.code)?.trim();
-  const inRaw = getParam(params.in)?.trim();
-  const outRaw = getParam(params.out)?.trim();
-  const boxRaw = getParam(params.box)?.trim();
-  const siteRaw = getParam(params.site)?.trim();
-
-  const missing: string[] = [];
-  if (!code) missing.push("code");
-  if (!inRaw) missing.push("in");
-  if (!outRaw) missing.push("out");
-  if (!boxRaw) missing.push("box");
-
-  if (missing.length > 0) {
-    return {
-      ok: false,
-      error: `Paramètres manquants : ${missing.join(", ")}.`,
-    };
-  }
-
-  const boxNumber = Number.parseInt(boxRaw!, 10);
-  if (!Number.isInteger(boxNumber) || boxNumber < 1) {
-    return {
-      ok: false,
-      error: "Le paramètre box doit être un entier positif.",
-    };
-  }
-
-  const distributor = await resolveDistributorSlugWithLegacy(siteRaw);
-  if (boxNumber > distributor.totalBoxes) {
-    return {
-      ok: false,
-      error: `Le casier ${boxNumber} n'existe pas sur ${distributor.name}, ${distributor.cityName} (max ${distributor.totalBoxes}).`,
-    };
-  }
-
-  const validFromResult = parseFrenchDateParam(inRaw!, "in");
-  if (!validFromResult.ok) {
-    return { ok: false, error: validFromResult.error };
-  }
-
-  const validToResult = parseFrenchDateParam(outRaw!, "out");
-  if (!validToResult.ok) {
-    return { ok: false, error: validToResult.error };
-  }
-
-  const validFrom = validFromResult.date;
-  const validTo = validToResult.date;
-
-  if (validTo <= validFrom) {
-    return {
-      ok: false,
-      error: "La date de fin (out) doit être postérieure à la date de début (in).",
-    };
-  }
-
-  return {
-    ok: true,
-    code: code!,
-    boxNumber,
-    distributorId: distributor.id,
-    distributorName: distributor.name,
-    cityName: distributor.cityName,
-    validFrom,
-    validTo,
-  };
 }
 
 function ErrorView({ message }: { message: string }) {
@@ -113,7 +34,7 @@ function ErrorView({ message }: { message: string }) {
         </h1>
         <p className="mt-3 text-sm leading-6 text-zinc-600">{message}</p>
         <p className="mt-6 text-xs text-zinc-400">
-          Exemple : /pass?code=ABC123&amp;in=1%20sept.%202026&amp;out=5%20sept.%202026&amp;box=1&amp;site=paris-opera
+          Exemple : /pass?code=ABC123&amp;in=1%20sept.%202026&amp;out=5%20sept.%202026&amp;box=1&amp;site=paris-opera&amp;keyId=...
         </p>
       </div>
     </div>
@@ -122,52 +43,38 @@ function ErrorView({ message }: { message: string }) {
 
 export default async function PassPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const parsed = await parseSearchParams(params);
 
-  if (!parsed.ok) {
-    return <ErrorView message={parsed.error} />;
+  const captureParams: PassCaptureParams = {
+    code: getParam(params.code) ?? "",
+    in: getParam(params.in) ?? "",
+    out: getParam(params.out) ?? "",
+    box: getParam(params.box) ?? "",
+    site: getParam(params.site),
+    name: getParam(params.name),
+    guests: getParam(params.guests),
+    keyId: getParam(params.keyId),
+  };
+
+  const registered = await registerGuestFromLink(captureParams);
+
+  if (!registered.ok) {
+    return <ErrorView message={registered.error} />;
   }
 
-  const {
-    code,
-    boxNumber,
-    distributorId,
-    distributorName,
-    cityName,
-    validFrom,
-    validTo,
-  } = parsed;
+  const { code, boxNumber, distributorName, cityName } = registered;
 
-  try {
-    const reservation = await prisma.reservation.upsert({
-      where: { code },
-      create: {
-        code,
-        distributorId,
-        boxNumber,
-        validFrom,
-        validTo,
-        isUsed: false,
-      },
-      update: {
-        distributorId,
-        boxNumber,
-        validFrom,
-        validTo,
-      },
-      include: { distributor: { include: { city: true } } },
-    });
+  const qrDataUrl = await QRCode.toDataURL(code, {
+    width: 280,
+    margin: 2,
+    color: {
+      dark: "#18181b",
+      light: "#ffffff",
+    },
+  });
 
-    const qrDataUrl = await QRCode.toDataURL(reservation.code, {
-      width: 280,
-      margin: 2,
-      color: {
-        dark: "#18181b",
-        light: "#ffffff",
-      },
-    });
-
-    return (
+  return (
+    <>
+      <PassCaptureClient params={captureParams} />
       <div className="flex min-h-full flex-1 items-center justify-center bg-linear-to-b from-zinc-50 to-zinc-100 px-6 py-12">
         <div className="w-full max-w-sm overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-xl shadow-zinc-200/60">
           <div className="border-b border-zinc-100 bg-zinc-900 px-6 py-8 text-center text-white">
@@ -184,7 +91,7 @@ export default async function PassPage({ searchParams }: PageProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qrDataUrl}
-                alt={`QR Code pour le pass ${reservation.code}`}
+                alt={`QR Code pour le pass ${code}`}
                 width={280}
                 height={280}
                 className="h-auto w-full max-w-[280px]"
@@ -200,20 +107,14 @@ export default async function PassPage({ searchParams }: PageProps) {
                 Casier n°
               </p>
               <p className="mt-1 text-4xl font-bold tabular-nums tracking-tight text-zinc-900">
-                {reservation.boxNumber}
+                {boxNumber}
               </p>
             </div>
 
-            <p className="mt-6 font-mono text-xs text-zinc-400">
-              {reservation.code}
-            </p>
+            <p className="mt-6 font-mono text-xs text-zinc-400">{code}</p>
           </div>
         </div>
       </div>
-    );
-  } catch {
-    return (
-      <ErrorView message="Une erreur est survenue lors de la création du pass. Veuillez réessayer." />
-    );
-  }
+    </>
+  );
 }

@@ -113,6 +113,8 @@ export function PassGenerator({ keys, distributors, isLight, onGenerate }: PassG
         out: outFormatted,
         box: String(selectedKey.boxNumber),
         site: distributorSlug,
+        name: guestFirstName.trim() || undefined,
+        keyId: selectedKey.id,
       });
 
       setPassCode(code);

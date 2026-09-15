@@ -8,6 +8,9 @@ export type ParsedReservationLink =
       out: string;
       box: string;
       site: string | null;
+      name: string | null;
+      guests: string | null;
+      keyId: string | null;
       passUrl: string;
     }
   | { ok: false; error: string };
@@ -105,6 +108,9 @@ function extractParamsFromBrokenAirbnbLink(
     },
     { key: "box", regex: /(?:^|[?&])box=([^&]+)/i },
     { key: "site", regex: /(?:^|[?&])site=([^&]+)/i },
+    { key: "name", regex: /(?:^|[?&])name=([^&]+)/i },
+    { key: "guests", regex: /(?:^|[?&])guests=([^&]+)/i },
+    { key: "keyid", regex: /(?:^|[?&])keyid=([^&]+)/i },
   ];
 
   for (const { key, regex } of patterns) {
@@ -124,6 +130,9 @@ export function buildPassUrl(params: {
   out: string;
   box: string;
   site?: string;
+  name?: string;
+  guests?: string;
+  keyId?: string;
 }): string {
   const parts = [
     `code=${encodeURIComponent(params.code)}`,
@@ -133,6 +142,15 @@ export function buildPassUrl(params: {
   ];
   if (params.site) {
     parts.push(`site=${encodeURIComponent(params.site)}`);
+  }
+  if (params.name) {
+    parts.push(`name=${encodeURIComponent(params.name)}`);
+  }
+  if (params.guests) {
+    parts.push(`guests=${encodeURIComponent(params.guests)}`);
+  }
+  if (params.keyId) {
+    parts.push(`keyId=${encodeURIComponent(params.keyId)}`);
   }
   return `/pass?${parts.join("&")}`;
 }
@@ -199,6 +217,9 @@ export function parseReservationLink(
   const outDate = params.out;
   const box = params.box;
   const site = params.site?.trim().toLowerCase() || null;
+  const name = params.name?.trim() || null;
+  const guests = params.guests?.trim() || null;
+  const keyId = params.keyid?.trim() || null;
 
   const missing: string[] = [];
   if (!code) missing.push("code");
@@ -247,12 +268,18 @@ export function parseReservationLink(
     out: outDate,
     box: String(boxNumber),
     site,
+    name,
+    guests,
+    keyId,
     passUrl: buildPassUrl({
       code,
       in: inDate,
       out: outDate,
       box: String(boxNumber),
       site: site ?? undefined,
+      name: name ?? undefined,
+      guests: guests ?? undefined,
+      keyId: keyId ?? undefined,
     }),
   };
 }

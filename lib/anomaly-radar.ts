@@ -137,7 +137,7 @@ export function detectNetworkAnomalies({
         (reservation) =>
           reservation.boxNumber === boxNumber &&
           !reservation.isUsed &&
-          new Date(reservation.validTo) < now,
+          new Date(reservation.checkOut) < now,
       );
 
       if (expiredUnused) {
@@ -154,7 +154,7 @@ export function detectNetworkAnomalies({
           latitude: distributor.latitude,
           longitude: distributor.longitude,
           boxNumber,
-          createdAt: expiredUnused.validTo,
+          createdAt: expiredUnused.checkOut,
         });
       }
     }

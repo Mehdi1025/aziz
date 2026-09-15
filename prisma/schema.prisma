@@ -44,15 +44,18 @@ model Distributor {
 model Reservation {
   id             String      @id @default(cuid())
   code           String      @unique
+  guestName      String?
+  guestsCount    Int?
+  checkIn        DateTime    @map("validFrom")
+  checkOut       DateTime    @map("validTo")
   distributorId  String
   distributor    Distributor @relation(fields: [distributorId], references: [id], onDelete: Restrict)
   boxNumber      Int
-  validFrom      DateTime
-  validTo        DateTime
   isUsed         Boolean     @default(false)
   scannedAt      DateTime?
   keyDepositId   String?
   keyDeposit     KeyDeposit? @relation(fields: [keyDepositId], references: [id], onDelete: SetNull)
+  createdAt      DateTime    @default(now())
 
   @@index([distributorId, boxNumber])
   @@index([keyDepositId])

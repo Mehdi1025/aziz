@@ -2,12 +2,17 @@ import type { LucideIcon } from "lucide-react";
 import {
   CreditCard,
   Home,
-  KeyRound,
   LayoutDashboard,
   Link2,
+  Users,
 } from "lucide-react";
 
-export type LandlordTab = "overview" | "properties" | "passes" | "subscription";
+export type LandlordTab =
+  | "overview"
+  | "properties"
+  | "passes"
+  | "guests"
+  | "subscription";
 
 export type LandlordTabMeta = {
   id: LandlordTab;
@@ -38,6 +43,13 @@ export const LANDLORD_TABS: LandlordTabMeta[] = [
     shortLabel: "Pass",
     description: "Générez des accès pour vos locataires",
     icon: Link2,
+  },
+  {
+    id: "guests",
+    label: "Voyageurs",
+    shortLabel: "Voyageurs",
+    description: "Réservations capturées depuis Airbnb",
+    icon: Users,
   },
   {
     id: "subscription",
