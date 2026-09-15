@@ -19,8 +19,8 @@ function mapReservation(reservation: {
   code: string;
   distributorId: string;
   boxNumber: number;
-  validFrom: Date;
-  validTo: Date;
+  checkIn: Date;
+  checkOut: Date;
   isUsed: boolean;
   scannedAt: Date | null;
   distributor: {
@@ -42,8 +42,8 @@ function mapReservation(reservation: {
     cityName: reservation.distributor.city.name,
     region: reservation.distributor.city.region,
     boxNumber: reservation.boxNumber,
-    validFrom: reservation.validFrom.toISOString(),
-    validTo: reservation.validTo.toISOString(),
+    checkIn: reservation.checkIn.toISOString(),
+    checkOut: reservation.checkOut.toISOString(),
     isUsed: reservation.isUsed,
     scannedAt: reservation.scannedAt?.toISOString() ?? null,
   };
@@ -60,7 +60,7 @@ export async function getDistributors(): Promise<DistributorRow[]> {
 export async function getReservations(): Promise<ReservationRow[]> {
   const reservations = await prisma.reservation.findMany({
     include: reservationInclude,
-    orderBy: { validFrom: "desc" },
+    orderBy: { checkIn: "desc" },
   });
 
   return reservations.map(mapReservation);
@@ -158,15 +158,15 @@ export async function createReservationManual(
         code,
         distributorId: distributor.id,
         boxNumber,
-        validFrom: validFromResult.date,
-        validTo: validToResult.date,
+        checkIn: validFromResult.date,
+        checkOut: validToResult.date,
         isUsed: false,
       },
       update: {
         distributorId: distributor.id,
         boxNumber,
-        validFrom: validFromResult.date,
-        validTo: validToResult.date,
+        checkIn: validFromResult.date,
+        checkOut: validToResult.date,
       },
       include: reservationInclude,
     });
@@ -210,7 +210,7 @@ export async function remoteOpenBox(code: string) {
   }
 
   const now = new Date();
-  if (now < reservation.validFrom || now > reservation.validTo) {
+  if (now < reservation.checkIn || now > reservation.checkOut) {
     return {
       ok: false as const,
       error: "Hors des dates de validité",

@@ -23,7 +23,7 @@ const landlordInclude = {
     include: {
       distributor: { include: { city: true } },
       reservations: {
-        orderBy: { validFrom: "desc" as const },
+        orderBy: { checkIn: "desc" as const },
       },
     },
     orderBy: { createdAt: "desc" as const },
@@ -46,12 +46,12 @@ function mapKeyDeposit(key: {
   notes: string | null;
   depositedAt: Date | null;
   createdAt: Date;
-  reservations: { code: string; validTo: Date; isUsed: boolean }[];
+  reservations: { code: string; checkOut: Date; isUsed: boolean }[];
 }): KeyDepositRow {
   const now = new Date();
   const activeReservation =
     key.reservations.find(
-      (reservation) => !reservation.isUsed && reservation.validTo >= now,
+      (reservation) => !reservation.isUsed && reservation.checkOut >= now,
     ) ?? null;
 
   return {
@@ -220,7 +220,7 @@ async function isBoxAvailable(
     where: {
       distributorId,
       boxNumber,
-      validTo: { gte: new Date() },
+      checkOut: { gte: new Date() },
     },
   });
   if (occupiedReservation) {
@@ -523,8 +523,8 @@ export async function createClientPassFromKey(
       code,
       distributorId: distributor.id,
       boxNumber: key.boxNumber,
-      validFrom: validFromResult.date,
-      validTo: validToResult.date,
+      checkIn: validFromResult.date,
+      checkOut: validToResult.date,
       keyDepositId: key.id,
     },
   });

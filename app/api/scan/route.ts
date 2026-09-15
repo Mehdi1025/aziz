@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     const now = new Date();
-    if (now < reservation.validFrom || now > reservation.validTo) {
+    if (now < reservation.checkIn || now > reservation.checkOut) {
       await logActivity({
         type: "SCAN_FAILED",
         distributorId: reservation.distributorId,

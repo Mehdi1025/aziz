@@ -90,10 +90,10 @@ export function ReservationsTable({
                     </span>
                   </td>
                   <td className={`px-5 py-3.5 text-sm tabular-nums ${muted(isLight)}`}>
-                    {formatDateTime(reservation.validFrom)}
+                    {formatDateTime(reservation.checkIn)}
                   </td>
                   <td className={`px-5 py-3.5 text-sm tabular-nums ${muted(isLight)}`}>
-                    {formatDateTime(reservation.validTo)}
+                    {formatDateTime(reservation.checkOut)}
                   </td>
                   <td className="px-5 py-3.5">
                     <StatusBadge isUsed={reservation.isUsed} isLight={isLight} />
