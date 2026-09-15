@@ -1,25 +1,31 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AddKeyModal } from "@/components/landlord/add-key-modal";
 import { DepositKeySheet } from "@/components/landlord/deposit-key-sheet";
 import type { HostKpis } from "@/components/landlord/kpi-cards";
 import { KeyGrid } from "@/components/landlord/key-grid";
-import { LandlordHeader } from "@/components/landlord/landlord-header";
 import { LandlordHero } from "@/components/landlord/landlord-hero";
 import { LandlordShell } from "@/components/landlord/landlord-shell";
+import { LandlordSidebar } from "@/components/landlord/landlord-sidebar";
+import type { LandlordTab } from "@/components/landlord/landlord-tabs";
+import { LandlordTopbar } from "@/components/landlord/landlord-topbar";
 import type { LandlordDashboardData } from "@/components/landlord/mock-landlord-data";
+import { OverviewShortcuts } from "@/components/landlord/overview-shortcuts";
 import {
   formatPassDateParam,
   generatePassCode,
   PassGenerator,
 } from "@/components/landlord/pass-generator";
+import { SubscriptionPanel } from "@/components/landlord/subscription-panel";
 import {
   addKeyDeposit,
   createClientPassFromKey,
   depositKeyInLocker,
 } from "@/app/hotes/actions";
+import { shell } from "@/lib/admin-theme";
 import { canAddKey } from "@/lib/subscription-types";
 import type { KeyDepositRow } from "@/lib/subscription-types";
 
@@ -36,12 +42,20 @@ function computeHostKpis(keys: KeyDepositRow[]): HostKpis {
   };
 }
 
+const tabMotion = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
+};
+
 export function LandlordDashboard({
   initialData,
   useMockActions = true,
 }: LandlordDashboardProps) {
   const [isLight, setIsLight] = useState(true);
-  const [landlord, setLandlord] = useState(initialData.landlord);
+  const [activeTab, setActiveTab] = useState<LandlordTab>("overview");
+  const landlord = initialData.landlord;
   const [keys, setKeys] = useState<KeyDepositRow[]>(initialData.landlord.keys);
   const [showAddKey, setShowAddKey] = useState(false);
   const [depositKeyId, setDepositKeyId] = useState<string | null>(null);
@@ -54,6 +68,7 @@ export function LandlordDashboard({
 
   const depositKey = keys.find((k) => k.id === depositKeyId) ?? null;
   const kpis = useMemo(() => computeHostKpis(keys), [keys]);
+  const pendingDepositCount = keys.filter((k) => k.status === "pending_deposit").length;
 
   useEffect(() => {
     const stored = localStorage.getItem("landlord-theme");
@@ -103,7 +118,6 @@ export function LandlordDashboard({
     });
     if (result.ok) {
       toast.success("Clé ajoutée");
-      // TODO: refresh from server
     } else {
       toast.error(result.error);
     }
@@ -184,35 +198,89 @@ export function LandlordDashboard({
 
   return (
     <LandlordShell isLight={isLight}>
-      <LandlordHeader isLight={isLight} onToggleTheme={toggleTheme} />
-
-      <main className="mx-auto max-w-6xl space-y-12 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-        <LandlordHero
+      <div className={`flex min-h-screen ${shell(isLight)}`}>
+        <LandlordSidebar
+          active={activeTab}
+          onChange={setActiveTab}
+          isLight={isLight}
           hostName={landlord.name}
+          hostEmail={landlord.email}
           planName={subscription?.planName ?? "—"}
           planSlug={subscription?.planSlug ?? "pro"}
           keysUsed={keysUsed}
           maxKeys={maxKeys}
-          kpis={kpis}
-          isLight={isLight}
         />
 
-        <KeyGrid
-          keys={keys}
-          isLight={isLight}
-          canAddKey={canAdd}
-          quotaReached={quotaReached}
-          onAddKey={() => setShowAddKey(true)}
-          onDeposit={setDepositKeyId}
-        />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <LandlordTopbar
+            activeTab={activeTab}
+            isLight={isLight}
+            onToggleTheme={toggleTheme}
+          />
 
-        <PassGenerator
-          keys={keys}
-          distributors={initialData.distributors}
-          isLight={isLight}
-          onGenerate={useMockActions ? undefined : handleGeneratePass}
-        />
-      </main>
+          <main className="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">
+            <div className="mx-auto max-w-5xl">
+              <AnimatePresence mode="wait">
+                {activeTab === "overview" && (
+                  <motion.div key="overview" {...tabMotion} className="space-y-8">
+                    <LandlordHero
+                      hostName={landlord.name}
+                      planName={subscription?.planName ?? "—"}
+                      planSlug={subscription?.planSlug ?? "pro"}
+                      keysUsed={keysUsed}
+                      maxKeys={maxKeys}
+                      kpis={kpis}
+                      isLight={isLight}
+                    />
+                    <OverviewShortcuts
+                      isLight={isLight}
+                      onNavigate={setActiveTab}
+                      onAddKey={() => setShowAddKey(true)}
+                      pendingDepositCount={pendingDepositCount}
+                      keysInLockerCount={kpis.keysInLocker}
+                    />
+                  </motion.div>
+                )}
+
+                {activeTab === "properties" && (
+                  <motion.div key="properties" {...tabMotion}>
+                    <KeyGrid
+                      keys={keys}
+                      isLight={isLight}
+                      canAddKey={canAdd}
+                      quotaReached={quotaReached}
+                      onAddKey={() => setShowAddKey(true)}
+                      onDeposit={setDepositKeyId}
+                    />
+                  </motion.div>
+                )}
+
+                {activeTab === "passes" && (
+                  <motion.div key="passes" {...tabMotion}>
+                    <PassGenerator
+                      keys={keys}
+                      distributors={initialData.distributors}
+                      isLight={isLight}
+                      onGenerate={useMockActions ? undefined : handleGeneratePass}
+                    />
+                  </motion.div>
+                )}
+
+                {activeTab === "subscription" && subscription && (
+                  <motion.div key="subscription" {...tabMotion}>
+                    <SubscriptionPanel
+                      subscription={subscription}
+                      plans={initialData.plans}
+                      keysUsed={keysUsed}
+                      isLight={isLight}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </main>
+        </div>
+      </div>
 
       <AddKeyModal
         open={showAddKey}
