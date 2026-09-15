@@ -40,7 +40,7 @@ export function LandlordDashboard({
   initialData,
   useMockActions = true,
 }: LandlordDashboardProps) {
-  const [isLight, setIsLight] = useState(false);
+  const [isLight, setIsLight] = useState(true);
   const [landlord, setLandlord] = useState(initialData.landlord);
   const [keys, setKeys] = useState<KeyDepositRow[]>(initialData.landlord.keys);
   const [showAddKey, setShowAddKey] = useState(false);
@@ -57,7 +57,7 @@ export function LandlordDashboard({
 
   useEffect(() => {
     const stored = localStorage.getItem("landlord-theme");
-    if (stored === "light") setIsLight(true);
+    if (stored === "dark") setIsLight(false);
   }, []);
 
   const toggleTheme = useCallback(() => {
