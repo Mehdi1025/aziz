@@ -256,6 +256,21 @@ export function LandlordDashboard({
 
           <main className="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">
             <div className="mx-auto max-w-5xl">
+              {useMockActions && (
+                <div
+                  className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
+                    isLight
+                      ? "border-amber-200 bg-amber-50 text-amber-900"
+                      : "border-amber-500/30 bg-amber-500/10 text-amber-100"
+                  }`}
+                >
+                  Mode démo — la base Turso n&apos;est pas connectée. Les voyageurs
+                  scannés ne s&apos;afficheront pas tant que{" "}
+                  <span className="font-mono text-xs">DATABASE_URL</span> et{" "}
+                  <span className="font-mono text-xs">TURSO_AUTH_TOKEN</span> ne
+                  sont pas configurés sur Vercel.
+                </div>
+              )}
               <AnimatePresence mode="wait">
                 {activeTab === "overview" && (
                   <motion.div key="overview" {...tabMotion} className="space-y-8">

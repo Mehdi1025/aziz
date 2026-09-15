@@ -4,6 +4,9 @@ import {
 } from "@/app/hotes/actions";
 import { LandlordDashboard } from "@/components/landlord/landlord-dashboard";
 
+/** Données voyageurs en temps réel — pas de cache statique. */
+export const dynamic = "force-dynamic";
+
 /**
  * Dashboard hôte branché sur Turso (Sophie Martin par défaut).
  */
