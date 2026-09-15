@@ -80,6 +80,41 @@ function parseLooseQueryString(queryString: string): Record<string, string> {
     }
   }
 
+  if (params.code && params.in && params.out && params.box) {
+    return params;
+  }
+
+  return extractParamsFromBrokenAirbnbLink(cleaned, params);
+}
+
+/** Liens Airbnb souvent collés avec espaces non encodés dans in/out. */
+function extractParamsFromBrokenAirbnbLink(
+  queryString: string,
+  existing: Record<string, string>,
+): Record<string, string> {
+  const params = { ...existing };
+  const patterns: Array<{ key: string; regex: RegExp }> = [
+    { key: "code", regex: /(?:^|[?&])code=([^&]+)/i },
+    {
+      key: "in",
+      regex: /(?:^|[?&])in=([^&]+?)(?=&(?:out|box|site)=|$)/i,
+    },
+    {
+      key: "out",
+      regex: /(?:^|[?&])out=([^&]+?)(?=&(?:box|site|in)=|$)/i,
+    },
+    { key: "box", regex: /(?:^|[?&])box=([^&]+)/i },
+    { key: "site", regex: /(?:^|[?&])site=([^&]+)/i },
+  ];
+
+  for (const { key, regex } of patterns) {
+    if (params[key]) continue;
+    const match = queryString.match(regex);
+    if (match?.[1]) {
+      params[key] = decodeQueryValue(match[1]);
+    }
+  }
+
   return params;
 }
 
@@ -90,27 +125,34 @@ export function buildPassUrl(params: {
   box: string;
   site?: string;
 }): string {
-  const searchParams = new URLSearchParams();
-  searchParams.set("code", params.code);
-  searchParams.set("in", params.in);
-  searchParams.set("out", params.out);
-  searchParams.set("box", params.box);
+  const parts = [
+    `code=${encodeURIComponent(params.code)}`,
+    `in=${encodeURIComponent(params.in)}`,
+    `out=${encodeURIComponent(params.out)}`,
+    `box=${encodeURIComponent(params.box)}`,
+  ];
   if (params.site) {
-    searchParams.set("site", params.site);
+    parts.push(`site=${encodeURIComponent(params.site)}`);
   }
-  return `/pass?${searchParams.toString()}`;
+  return `/pass?${parts.join("&")}`;
 }
 
-export function buildExamplePassLink(origin = "", site = "paris-opera"): string {
-  const base = origin.replace(/\/$/, "");
-  const params = new URLSearchParams({
+/** Exemple relatif — fonctionne sur Vercel sans domaine codé en dur. */
+export function buildExamplePassLink(site = "paris-opera"): string {
+  return buildPassUrl({
     code: "HMNCWQN8DM",
-    in: "1 sept. 2026",
-    out: "2 sept. 2026",
+    in: "15 sept. 2026",
+    out: "20 sept. 2026",
     box: "1",
     site,
   });
-  return `${base}/pass?${params.toString()}`;
+}
+
+/** Exemple complet affiché dans le placeholder (lien Airbnb typique). */
+export function buildExamplePassLinkFull(origin = ""): string {
+  const base = origin.replace(/\/$/, "");
+  const relative = buildExamplePassLink();
+  return base ? `${base}${relative}` : relative;
 }
 
 function detectWrongLinkType(input: string, origin?: string): string | null {
@@ -118,7 +160,7 @@ function detectWrongLinkType(input: string, origin?: string): string | null {
 
   if (!cleaned.includes("code=") && !cleaned.includes("?")) {
     if (/\/recuperer\/?$/i.test(cleaned)) {
-      const example = origin ? buildExamplePassLink(origin) : "/pass?code=DEMO-CLIENT&in=1 sept. 2026&out=5 sept. 2026&box=2";
+      const example = buildExamplePassLink();
       return `Ce lien pointe vers la page /recuperer, pas vers votre pass. Collez un lien qui contient /pass?code=...&in=...&out=...&box=... — par exemple : ${example}`;
     }
 
@@ -126,7 +168,7 @@ function detectWrongLinkType(input: string, origin?: string): string | null {
   }
 
   if (/\/recuperer/i.test(cleaned) && !/code=/i.test(cleaned)) {
-    const example = origin ? buildExamplePassLink(origin) : "/pass?code=...";
+    const example = buildExamplePassLink();
     return `Lien incorrect : vous avez collé l'adresse de cette page. Collez le lien /pass reçu par e-mail ou message, par exemple : ${example}`;
   }
 
@@ -165,9 +207,7 @@ export function parseReservationLink(
   if (!box) missing.push("box");
 
   if (missing.length > 0) {
-    const example = origin
-      ? buildExamplePassLink(origin)
-      : "/pass?code=DEMO-CLIENT&in=1 sept. 2026&out=5 sept. 2026&box=2";
+    const example = buildExamplePassLink();
 
     return {
       ok: false,
