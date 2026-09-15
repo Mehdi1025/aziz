@@ -7,7 +7,13 @@ export type LandlordGuestReservationRow = {
   checkOut: string;
   isUsed: boolean;
   propertyLabel: string | null;
+  propertyAddress: string | null;
+  boxNumber: number;
+  distributorName: string;
+  distributorSlug: string;
+  cityName: string;
   createdAt: string;
+  scannedAt: string | null;
 };
 
 export function getGuestReservationStatus(

@@ -52,8 +52,14 @@ export async function getLandlordReservations(
       keyDeposit: { landlordId },
     },
     include: {
+      distributor: {
+        include: { city: true },
+      },
       keyDeposit: {
-        select: { propertyLabel: true },
+        select: {
+          propertyLabel: true,
+          propertyAddress: true,
+        },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -68,7 +74,13 @@ export async function getLandlordReservations(
     checkOut: row.checkOut.toISOString(),
     isUsed: row.isUsed,
     propertyLabel: row.keyDeposit?.propertyLabel ?? null,
+    propertyAddress: row.keyDeposit?.propertyAddress ?? null,
+    boxNumber: row.boxNumber,
+    distributorName: row.distributor.name,
+    distributorSlug: row.distributor.slug,
+    cityName: row.distributor.city.name,
     createdAt: row.createdAt.toISOString(),
+    scannedAt: row.scannedAt?.toISOString() ?? null,
   }));
 }
 
