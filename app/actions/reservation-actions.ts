@@ -1,5 +1,6 @@
 "use server";
 
+import { resolveLegacyKeyId } from "@/lib/legacy-key-ids";
 import { resolveDistributorSlugWithLegacy } from "@/lib/network";
 import { parseFrenchDateParam } from "@/lib/parse-french-date";
 import { prisma } from "@/lib/prisma";
@@ -7,7 +8,9 @@ import type { ReservationCaptureData } from "@/lib/reservation-capture-types";
 
 function parseGuestsCount(raw: string | undefined): number | null {
   if (!raw?.trim()) return null;
-  const value = Number.parseInt(raw.trim(), 10);
+  const match = raw.trim().match(/\d+/);
+  if (!match) return null;
+  const value = Number.parseInt(match[0], 10);
   if (!Number.isInteger(value) || value < 1) return null;
   return value;
 }
@@ -60,10 +63,12 @@ export async function captureReservationData(
     let resolvedBoxNumber = lockerNumber;
     let keyDepositId: string | null = null;
 
-    if (data.keyId?.trim()) {
+    const resolvedKeyId = resolveLegacyKeyId(data.keyId);
+
+    if (resolvedKeyId) {
       try {
         const keyDeposit = await prisma.keyDeposit.findUnique({
-          where: { id: data.keyId.trim() },
+          where: { id: resolvedKeyId },
           include: { distributor: true },
         });
 
