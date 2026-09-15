@@ -67,14 +67,15 @@ export async function captureReservationData(
           include: { distributor: true },
         });
 
-        if (
-          keyDeposit?.distributorId &&
-          keyDeposit.distributor &&
-          keyDeposit.boxNumber
-        ) {
+        if (keyDeposit) {
           keyDepositId = keyDeposit.id;
-          distributorId = keyDeposit.distributorId;
-          resolvedBoxNumber = keyDeposit.boxNumber;
+          if (keyDeposit.distributorId && keyDeposit.boxNumber) {
+            distributorId = keyDeposit.distributorId;
+            resolvedBoxNumber = keyDeposit.boxNumber;
+          } else {
+            const distributor = await resolveDistributorSlugWithLegacy(data.site);
+            distributorId = distributor.id;
+          }
         } else {
           const distributor = await resolveDistributorSlugWithLegacy(data.site);
           distributorId = distributor.id;

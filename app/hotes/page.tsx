@@ -1,32 +1,29 @@
-import { getLandlordReservations } from "@/app/hotes/actions";
-import { LandlordDashboard } from "@/components/landlord/landlord-dashboard";
 import {
-  MOCK_GUEST_RESERVATIONS,
-  MOCK_LANDLORD_DASHBOARD,
-} from "@/components/landlord/mock-landlord-data";
+  getHostDashboardData,
+  getLandlordReservations,
+} from "@/app/hotes/actions";
+import { LandlordDashboard } from "@/components/landlord/landlord-dashboard";
 
 /**
- * Page Server Component — structure et données initiales.
- * Les réservations voyageurs sont filtrées multi-tenant par landlordId.
+ * Dashboard hôte branché sur Turso (Sophie Martin par défaut).
  */
 export default async function HotesPage() {
-  const initialData = MOCK_LANDLORD_DASHBOARD;
+  const { data: initialData, isFromDatabase } = await getHostDashboardData();
 
-  let guestReservations = MOCK_GUEST_RESERVATIONS;
-  try {
-    const fromDb = await getLandlordReservations(initialData.landlord.id);
-    if (fromDb.length > 0) {
-      guestReservations = fromDb;
+  let guestReservations: Awaited<ReturnType<typeof getLandlordReservations>> = [];
+  if (isFromDatabase) {
+    try {
+      guestReservations = await getLandlordReservations(initialData.landlord.id);
+    } catch {
+      guestReservations = [];
     }
-  } catch {
-    /* fallback mock pour la démo */
   }
 
   return (
     <LandlordDashboard
       initialData={initialData}
       initialGuestReservations={guestReservations}
-      useMockActions
+      useMockActions={!isFromDatabase}
     />
   );
 }

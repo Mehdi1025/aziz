@@ -163,7 +163,7 @@ export function buildExamplePassLink(site = "paris-opera"): string {
     out: "20 sept. 2026",
     name: "Emma",
     guests: "2",
-    keyId: "key_marais",
+    keyId: "demo-key-sophie-t1",
     box: "3",
     site,
   });

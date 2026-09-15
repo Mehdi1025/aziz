@@ -94,7 +94,7 @@ export const MOCK_HOST_DISTRIBUTORS: HostDistributorOption[] = [
 
 const MOCK_KEYS: KeyDepositRow[] = [
   {
-    id: "key_marais",
+    id: "demo-key-sophie-t1",
     landlordId: "landlord_sophie",
     subscriptionId: "sub_sophie_pro",
     propertyLabel: "Appartement Marais",

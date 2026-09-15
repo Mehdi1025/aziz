@@ -10,7 +10,7 @@ import {
 
 const EXAMPLE_RELATIVE = buildExamplePassLink();
 const PLACEHOLDER =
-  "https://aziz-beta-six.vercel.app/pass?code=HMNCWQN8DM&in=15 sept. 2026&out=20 sept. 2026&name=Emma&guests=2&keyId=key_marais&box=3&site=paris-opera";
+  "https://aziz-beta-six.vercel.app/pass?code=HMNCWQN8DM&in=15 sept. 2026&out=20 sept. 2026&name=Emma&guests=2&keyId=demo-key-sophie-t1&box=1&site=paris-opera";
 
 export function RecupererClient() {
   const router = useRouter();

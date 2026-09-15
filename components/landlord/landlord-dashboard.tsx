@@ -28,8 +28,9 @@ import {
   addKeyDeposit,
   createClientPassFromKey,
   depositKeyInLocker,
+  refreshGuestReservations,
 } from "@/app/hotes/actions";
-import { shell } from "@/lib/admin-theme";
+import { muted, shell } from "@/lib/admin-theme";
 import { canAddKey } from "@/lib/subscription-types";
 import type { KeyDepositRow } from "@/lib/subscription-types";
 
@@ -65,7 +66,8 @@ export function LandlordDashboard({
   const [keys, setKeys] = useState<KeyDepositRow[]>(initialData.landlord.keys);
   const [showAddKey, setShowAddKey] = useState(false);
   const [depositKeyId, setDepositKeyId] = useState<string | null>(null);
-  const [guestReservations] = useState(initialGuestReservations);
+  const [guestReservations, setGuestReservations] = useState(initialGuestReservations);
+  const [isRefreshingGuests, setIsRefreshingGuests] = useState(false);
 
   const distributorSlugs = useMemo(
     () =>
@@ -89,6 +91,25 @@ export function LandlordDashboard({
     const stored = localStorage.getItem("landlord-theme");
     if (stored === "dark") setIsLight(false);
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== "guests" || useMockActions) return;
+
+    let cancelled = false;
+    setIsRefreshingGuests(true);
+
+    void refreshGuestReservations(landlord.id)
+      .then((rows) => {
+        if (!cancelled) setGuestReservations(rows);
+      })
+      .finally(() => {
+        if (!cancelled) setIsRefreshingGuests(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, landlord.id, useMockActions]);
 
   const toggleTheme = useCallback(() => {
     setIsLight((prev) => {
@@ -292,6 +313,11 @@ export function LandlordDashboard({
 
                 {activeTab === "guests" && (
                   <motion.div key="guests" {...tabMotion}>
+                    {isRefreshingGuests && (
+                      <p className={`mb-4 text-xs ${muted(isLight)}`}>
+                        Actualisation des voyageurs…
+                      </p>
+                    )}
                     <GuestReservationsTable
                       reservations={guestReservations}
                       isLight={isLight}
