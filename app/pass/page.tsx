@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
-import { registerGuestFromLink } from "@/app/actions/guest-actions";
-import { PassCaptureClient, type PassCaptureParams } from "@/app/pass/pass-capture-client";
+import { PassCaptureClient } from "@/app/pass/pass-capture-client";
+import { resolveDistributorSlugWithLegacy } from "@/lib/network";
+import { parsePassSearchParams } from "@/lib/parse-pass-search-params";
 
 type SearchParams = {
   code?: string | string[];
@@ -33,35 +34,44 @@ function ErrorView({ message }: { message: string }) {
           Pass inaccessible
         </h1>
         <p className="mt-3 text-sm leading-6 text-zinc-600">{message}</p>
-        <p className="mt-6 text-xs text-zinc-400">
-          Exemple : /pass?code=ABC123&amp;in=1%20sept.%202026&amp;out=5%20sept.%202026&amp;box=1&amp;site=paris-opera&amp;keyId=...
-        </p>
       </div>
     </div>
   );
 }
 
 export default async function PassPage({ searchParams }: PageProps) {
-  const params = await searchParams;
+  const raw = await searchParams;
 
-  const captureParams: PassCaptureParams = {
-    code: getParam(params.code) ?? "",
-    in: getParam(params.in) ?? "",
-    out: getParam(params.out) ?? "",
-    box: getParam(params.box) ?? "",
-    site: getParam(params.site),
-    name: getParam(params.name),
-    guests: getParam(params.guests),
-    keyId: getParam(params.keyId),
-  };
+  const parsed = parsePassSearchParams({
+    code: getParam(raw.code),
+    in: getParam(raw.in),
+    out: getParam(raw.out),
+    box: getParam(raw.box),
+    site: getParam(raw.site),
+    name: getParam(raw.name),
+    guests: getParam(raw.guests),
+    keyId: getParam(raw.keyId),
+  });
 
-  const registered = await registerGuestFromLink(captureParams);
-
-  if (!registered.ok) {
-    return <ErrorView message={registered.error} />;
+  if (!parsed.ok) {
+    return <ErrorView message={parsed.error} />;
   }
 
-  const { code, boxNumber, distributorName, cityName } = registered;
+  const { data: captureParams, boxNumber } = parsed;
+  const { code, name, site } = captureParams;
+
+  let distributorName = site ?? "KeyNest";
+  let cityName = "";
+
+  if (site) {
+    try {
+      const distributor = await resolveDistributorSlugWithLegacy(site);
+      distributorName = distributor.name;
+      cityName = distributor.cityName;
+    } catch {
+      distributorName = site.replace(/-/g, " ");
+    }
+  }
 
   const qrDataUrl = await QRCode.toDataURL(code, {
     width: 280,
@@ -78,10 +88,19 @@ export default async function PassPage({ searchParams }: PageProps) {
       <div className="flex min-h-full flex-1 items-center justify-center bg-linear-to-b from-zinc-50 to-zinc-100 px-6 py-12">
         <div className="w-full max-w-sm overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-xl shadow-zinc-200/60">
           <div className="border-b border-zinc-100 bg-zinc-900 px-6 py-8 text-center text-white">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
-              {cityName}
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+            {name && site && (
+              <p className="mb-3 text-sm leading-relaxed text-zinc-300">
+                Bonjour <span className="font-semibold text-white">{name}</span>,
+                voici votre pass pour le site{" "}
+                <span className="font-semibold text-white">{site}</span>
+              </p>
+            )}
+            {cityName && (
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+                {cityName}
+              </p>
+            )}
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight capitalize">
               {distributorName}
             </h1>
           </div>

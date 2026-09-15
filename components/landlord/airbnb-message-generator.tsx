@@ -26,10 +26,8 @@ function buildAirbnbMessageTemplate(
     "guests=[Nombre de voyageurs]",
     `keyId=${keyDeposit.id}`,
     `box=${keyDeposit.boxNumber ?? "[Numéro de casier]"}`,
+    distributorSlug ? `site=${distributorSlug}` : "site=[Slug distributeur]",
   ];
-  if (distributorSlug) {
-    parts.push(`site=${distributorSlug}`);
-  }
   return parts.join("&");
 }
 

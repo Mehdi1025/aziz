@@ -100,11 +100,11 @@ function extractParamsFromBrokenAirbnbLink(
     { key: "code", regex: /(?:^|[?&])code=([^&]+)/i },
     {
       key: "in",
-      regex: /(?:^|[?&])in=([^&]+?)(?=&(?:out|box|site)=|$)/i,
+      regex: /(?:^|[?&])in=([^&]+?)(?=&(?:out|name|guests|keyid|box|site)=|$)/i,
     },
     {
       key: "out",
-      regex: /(?:^|[?&])out=([^&]+?)(?=&(?:box|site|in)=|$)/i,
+      regex: /(?:^|[?&])out=([^&]+?)(?=&(?:name|guests|keyid|box|site|in)=|$)/i,
     },
     { key: "box", regex: /(?:^|[?&])box=([^&]+)/i },
     { key: "site", regex: /(?:^|[?&])site=([^&]+)/i },
@@ -138,11 +138,7 @@ export function buildPassUrl(params: {
     `code=${encodeURIComponent(params.code)}`,
     `in=${encodeURIComponent(params.in)}`,
     `out=${encodeURIComponent(params.out)}`,
-    `box=${encodeURIComponent(params.box)}`,
   ];
-  if (params.site) {
-    parts.push(`site=${encodeURIComponent(params.site)}`);
-  }
   if (params.name) {
     parts.push(`name=${encodeURIComponent(params.name)}`);
   }
@@ -151,6 +147,10 @@ export function buildPassUrl(params: {
   }
   if (params.keyId) {
     parts.push(`keyId=${encodeURIComponent(params.keyId)}`);
+  }
+  parts.push(`box=${encodeURIComponent(params.box)}`);
+  if (params.site) {
+    parts.push(`site=${encodeURIComponent(params.site)}`);
   }
   return `/pass?${parts.join("&")}`;
 }
@@ -161,7 +161,10 @@ export function buildExamplePassLink(site = "paris-opera"): string {
     code: "HMNCWQN8DM",
     in: "15 sept. 2026",
     out: "20 sept. 2026",
-    box: "1",
+    name: "Emma",
+    guests: "2",
+    keyId: "key_marais",
+    box: "3",
     site,
   });
 }
