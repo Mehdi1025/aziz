@@ -74,13 +74,13 @@ export async function captureReservationData(
 
         if (keyDeposit) {
           keyDepositId = keyDeposit.id;
-          if (keyDeposit.distributorId && keyDeposit.boxNumber) {
+          if (keyDeposit.distributorId) {
             distributorId = keyDeposit.distributorId;
-            resolvedBoxNumber = keyDeposit.boxNumber;
           } else {
             const distributor = await resolveDistributorSlugWithLegacy(data.site);
             distributorId = distributor.id;
           }
+          // Casier : conserver celui du lien/QR (box=…) — c'est ce que le voyageur voit.
         } else {
           const distributor = await resolveDistributorSlugWithLegacy(data.site);
           distributorId = distributor.id;
