@@ -6,29 +6,41 @@ import { useMemo, useState } from "react";
 import { heading, muted, panel, subheading } from "@/lib/admin-theme";
 import type { KeyDepositRow } from "@/lib/subscription-types";
 
+const DEFAULT_ORIGIN = "https://aziz-beta-six.vercel.app";
+
 type AirbnbMessageGeneratorProps = {
   keys: KeyDepositRow[];
   distributorSlugs: Record<string, string>;
   isLight: boolean;
 };
 
-function buildAirbnbMessageTemplate(
+function buildFullAirbnbMessage(
   origin: string,
   keyDeposit: KeyDepositRow,
-  distributorSlug?: string,
+  siteSlug: string,
 ): string {
-  const domain = origin || "https://[TON-DOMAINE]";
-  const parts = [
-    `${domain}/pass?code=[Code de confirmation]`,
-    "in=[Date d'arrivée]",
-    "out=[Date de départ]",
-    "name=[Prénom du voyageur]",
-    "guests=[Nombre de voyageurs]",
-    `keyId=${keyDeposit.id}`,
-    `box=${keyDeposit.boxNumber ?? "[Numéro de casier]"}`,
-    distributorSlug ? `site=${distributorSlug}` : "site=[Slug distributeur]",
-  ];
-  return parts.join("&");
+  const base = origin.replace(/\/$/, "");
+  const passUrl =
+    `${base}/pass?code=[Code de confirmation]` +
+    `&in=[Date d'arrivée]` +
+    `&out=[Date de départ]` +
+    `&name=[Prénom du voyageur]` +
+    `&guests=[Nombre de voyageurs]` +
+    `&keyId=${keyDeposit.id}` +
+    `&box=${keyDeposit.boxNumber ?? ""}` +
+    `&site=${siteSlug}`;
+
+  return `Bonjour ! Merci pour votre réservation.
+
+Pour récupérer votre clé dans le distributeur automatique à votre arrivée, veuillez suivre ces deux étapes simples :
+
+Étape 1 : Copiez votre lien de confirmation personnel ci-dessous :
+${passUrl}
+
+Étape 2 : Rendez-vous sur notre page sécurisée de récupération, collez votre lien dans le champ prévu à cet effet, et le système se chargera d'afficher instantanément votre QR code d'accès :
+${base}/recuperer
+
+Bon voyage et à très vite !`;
 }
 
 export function AirbnbMessageGenerator({
@@ -46,19 +58,21 @@ export function AirbnbMessageGenerator({
 
   const selectedKey = eligibleKeys.find((k) => k.id === selectedKeyId) ?? null;
 
-  const messageTemplate = useMemo(() => {
+  const fullMessage = useMemo(() => {
     if (!selectedKey) return "";
     const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    const slug = selectedKey.distributorId
-      ? distributorSlugs[selectedKey.distributorId]
-      : undefined;
-    return buildAirbnbMessageTemplate(origin, selectedKey, slug);
+      typeof window !== "undefined" && window.location.origin
+        ? window.location.origin
+        : DEFAULT_ORIGIN;
+    const siteSlug = selectedKey.distributorId
+      ? (distributorSlugs[selectedKey.distributorId] ?? "paris-opera")
+      : "paris-opera";
+    return buildFullAirbnbMessage(origin, selectedKey, siteSlug);
   }, [selectedKey, distributorSlugs]);
 
   async function handleCopy() {
-    if (!messageTemplate) return;
-    await navigator.clipboard.writeText(messageTemplate);
+    if (!fullMessage) return;
+    await navigator.clipboard.writeText(fullMessage);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -84,12 +98,13 @@ export function AirbnbMessageGenerator({
             </p>
           </div>
           <h2 className={`text-lg font-black tracking-tight ${heading(isLight)}`}>
-            Lien d&apos;acquisition voyageur
+            Message prêt à envoyer
           </h2>
-          <p className={`mt-1 max-w-xl text-sm ${muted(isLight)}`}>
-            Copiez ce modèle dans votre message Airbnb. Le{" "}
-            <span className="font-semibold">keyId</span> lie automatiquement le voyageur à
-            votre logement.
+          <p className={`mt-1 max-w-xl text-sm leading-relaxed ${muted(isLight)}`}>
+            Copiez ce message complet et collez-le dans vos messages automatiques Airbnb.
+            Les crochets{" "}
+            <span className="font-mono text-[11px]">[Code de confirmation]</span> restent
+            tels quels — remplacez-les par les variables Airbnb côté plateforme.
           </p>
         </div>
       </div>
@@ -105,10 +120,10 @@ export function AirbnbMessageGenerator({
           id="message-key"
           value={selectedKeyId}
           onChange={(e) => setSelectedKeyId(e.target.value)}
-          className={`w-full max-w-md rounded-xl border px-4 py-3 text-sm outline-none ${
+          className={`w-full max-w-md rounded-xl border px-4 py-3 text-sm outline-none transition-colors ${
             isLight
-              ? "border-zinc-200 bg-zinc-50 text-zinc-900"
-              : "border-white/10 bg-white/[0.04] text-white"
+              ? "border-zinc-200 bg-zinc-50 text-zinc-900 focus:border-violet-300"
+              : "border-white/10 bg-white/[0.04] text-white focus:border-violet-500/40"
           }`}
         >
           {eligibleKeys.map((key) => (
@@ -119,41 +134,53 @@ export function AirbnbMessageGenerator({
         </select>
       </div>
 
-      <div
-        className={`rounded-2xl border px-4 py-4 font-mono text-xs leading-relaxed break-all ${
-          isLight
-            ? "border-zinc-200 bg-zinc-50 text-zinc-700"
-            : "border-white/10 bg-black/20 text-neutral-300"
-        }`}
-      >
-        {messageTemplate}
-      </div>
+      <div className="relative">
+        <pre
+          className={`max-h-[420px] overflow-auto rounded-2xl border px-5 py-5 text-[13px] leading-relaxed whitespace-pre-wrap ${
+            isLight
+              ? "border-zinc-200 bg-zinc-50 text-zinc-700"
+              : "border-white/10 bg-zinc-950/60 text-neutral-300"
+          }`}
+          style={{ fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}
+        >
+          {fullMessage}
+        </pre>
 
-      <button
-        type="button"
-        onClick={handleCopy}
-        className={`mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
-          copied
-            ? isLight
-              ? "bg-emerald-600 text-white"
-              : "bg-emerald-500 text-white"
-            : isLight
-              ? "bg-zinc-900 text-white hover:bg-zinc-800"
-              : "bg-white text-zinc-950 hover:bg-neutral-100"
-        }`}
-      >
-        {copied ? (
-          <>
-            <Check className="h-4 w-4" />
-            Copié !
-          </>
-        ) : (
-          <>
-            <Copy className="h-4 w-4" />
-            Copier le message
-          </>
-        )}
-      </button>
+        <motion.div
+          className="mt-4 flex justify-end"
+          initial={false}
+          animate={copied ? { scale: [1, 1.02, 1] } : { scale: 1 }}
+          transition={{ duration: 0.25 }}
+        >
+          <motion.button
+            type="button"
+            onClick={handleCopy}
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.98 }}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition-colors ${
+              copied
+                ? isLight
+                  ? "bg-emerald-600 text-white"
+                  : "bg-emerald-500 text-white"
+                : isLight
+                  ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                  : "bg-white text-zinc-950 hover:bg-neutral-100"
+            }`}
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" strokeWidth={2.5} />
+                Copié !
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                Copier le message complet
+              </>
+            )}
+          </motion.button>
+        </motion.div>
+      </div>
     </motion.section>
   );
 }
